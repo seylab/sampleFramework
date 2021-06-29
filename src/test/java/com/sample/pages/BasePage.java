@@ -86,9 +86,9 @@ public abstract class  BasePage {
     }
 
     /**
-     * This method will navigate user to the specific module in vytrack application.
+     * This method will navigate user to the specific module in the application.
      * For example: if tab is equals to Activities, and module equals to Calls,
-     * Then method will navigate user to this page: http://qa2.vytrack.com/call/
+     * Then method will navigate user to this page: http://qa2.*******.com/call/
      *
      * @param tab
      * @param module
