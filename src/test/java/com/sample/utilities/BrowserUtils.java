@@ -7,6 +7,7 @@ import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -90,8 +91,7 @@ public class BrowserUtils {
      * @return
      */
     public static WebElement waitForVisibility(WebElement element, int timeToWaitInSec) {
-        WebDriverWait wait = new WebDriverWait(Driver.get(), timeToWaitInSec);
-        return wait.until(ExpectedConditions.visibilityOf(element));
+        return new WebDriverWait(Driver.get(), Duration.ofSeconds(timeToWaitInSec)).until(ExpectedConditions.visibilityOf(element));
     }
 
     /**
@@ -102,8 +102,7 @@ public class BrowserUtils {
      * @return
      */
     public static WebElement waitForVisibility(By locator, int timeout) {
-        WebDriverWait wait = new WebDriverWait(Driver.get(), timeout);
-        return wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
+        return new WebDriverWait(Driver.get(), Duration.ofSeconds(timeout)).until(ExpectedConditions.visibilityOfElementLocated(locator));
     }
 
     /**
@@ -114,8 +113,7 @@ public class BrowserUtils {
      * @return
      */
     public static WebElement waitForClickability(WebElement element, int timeout) {
-        WebDriverWait wait = new WebDriverWait(Driver.get(), timeout);
-        return wait.until(ExpectedConditions.elementToBeClickable(element));
+        return new WebDriverWait(Driver.get(), Duration.ofSeconds(timeout)).until(ExpectedConditions.elementToBeClickable(element));
     }
 
     /**
@@ -126,8 +124,7 @@ public class BrowserUtils {
      * @return
      */
     public static WebElement waitForClickability(By locator, int timeout) {
-        WebDriverWait wait = new WebDriverWait(Driver.get(), timeout);
-        return wait.until(ExpectedConditions.elementToBeClickable(locator));
+        return new WebDriverWait(Driver.get(), Duration.ofSeconds(timeout)).until(ExpectedConditions.elementToBeClickable(locator));
     }
 
     /**
