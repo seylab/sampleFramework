@@ -14,7 +14,7 @@ public class Hooks {
 
     @Before
     public void setUp(){
-        System.out.println("\tthis is coming from BEFORE");
+
         Driver.get().manage().timeouts().implicitlyWait(Duration.ofSeconds(20));
     }
 
@@ -31,12 +31,12 @@ public class Hooks {
 
     @Before("@db")
     public void setUpdb(){
-        System.out.println("\tconnecting to database...");
+//        System.out.println("\tconnecting to database...");
     }
 
     @After("@db")
     public void closeDb(){
-        System.out.println("\tdisconnecting to database...");
+//        System.out.println("\tdisconnecting to database...");
 
     }
 
