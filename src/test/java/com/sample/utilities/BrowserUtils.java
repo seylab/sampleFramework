@@ -139,7 +139,7 @@ public class BrowserUtils {
             }
         };
         try {
-            WebDriverWait wait = new WebDriverWait(Driver.get(), timeOutInSeconds);
+            WebDriverWait wait = new WebDriverWait(Driver.get(), Duration.ofSeconds(timeOutInSeconds));
             wait.until(expectation);
         } catch (Throwable error) {
             error.printStackTrace();
@@ -369,7 +369,7 @@ public class BrowserUtils {
      * @param time
      */
     public static void waitForPresenceOfElement(By by, long time) {
-        new WebDriverWait(Driver.get(), time).until(ExpectedConditions.presenceOfElementLocated(by));
+        new WebDriverWait(Driver.get(), Duration.ofSeconds(time)).until(ExpectedConditions.presenceOfElementLocated(by));
     }
 
 
