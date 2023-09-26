@@ -372,6 +372,38 @@ public class BrowserUtils {
         new WebDriverWait(Driver.get(), Duration.ofSeconds(time)).until(ExpectedConditions.presenceOfElementLocated(by));
     }
 
+    // This method asserts that the given actual and expected strings contain each other.
+    public static void assertContains(String actual, String expected) {
+        // Check if the actual string contains the expected string.
+        Assert.assertTrue(actual.contains(expected));
+    }
+
+    // This method asserts that the given actual and expected strings contain each other, and displays a custom error message if the assertion fails.
+    public static void assertContains(String actual, String expected, String message) {
+        // Check if the actual string contains the expected string.
+        Assert.assertTrue(message, actual.contains(expected));
+    }
+
+
+    public static void sendKeysMethod(WebElement element, String text, int timeout) {
+        waitForPageToLoad(timeout);
+        waitForVisibility(element, timeout);
+        element.sendKeys(text);
+    }
+
+    public static void acceptAlert() {
+        // Get the alert
+        Alert alert = Driver.get().switchTo().alert();
+        // Accept the alert
+        alert.accept();
+    }
+
+    public static void dismissAlert() {
+        // Get the alert
+        Alert alert = Driver.get().switchTo().alert();
+        // Dismiss the alert
+        alert.dismiss();
+    }
 
 
 }
