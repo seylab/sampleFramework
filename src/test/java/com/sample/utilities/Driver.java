@@ -11,61 +11,66 @@ import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.ie.InternetExplorerDriver;
 import org.openqa.selenium.safari.SafariDriver;
 
+
 public class Driver {
     private Driver() {
 
     }
 
-    private static WebDriver driver;
+    // InheritableThreadLocal  --> this is like a container, bag, pool.
+    // in this pool we can have separate objects for each thread
+    // for each thread, in InheritableThreadLocal we can have separate object for that thread
+    // driver class will provide separate webdriver object per thread
+    private static InheritableThreadLocal<WebDriver> driverPool = new InheritableThreadLocal<>();
 
     public static WebDriver get() {
         // Test
-        if (driver == null) {
+        if (driverPool.get() == null) {
             // this line will tell which browser should open based on the value from properties file
-            String browser = ConfigurationReader.get("browser");
+            String browser = System.getProperty("browser") != null ? browser = System.getProperty("browser") : ConfigurationReader.get("browser");
+
             switch (browser) {
                 case "chrome":
                     ChromeOptions options = new ChromeOptions();
                     options.addArguments("--remote-allow-origins=*");
-                    driver = new ChromeDriver();
+                    driverPool.set( new ChromeDriver() );
                     break;
                 case "chrome-headless":
-                    driver = new ChromeDriver(new ChromeOptions().addArguments("--headless"));
+                    driverPool.set(new ChromeDriver(new ChromeOptions().addArguments("--headless")));
                     break;
                 case "firefox":
-                    driver = new FirefoxDriver();
+                    driverPool.set(new FirefoxDriver());
                     break;
                 case "firefox-headless":
-                    driver = new FirefoxDriver(new FirefoxOptions().addArguments("--headless"));
+                    driverPool.set(new FirefoxDriver(new FirefoxOptions().addArguments("--headless")));
                     break;
                 case "ie":
                     if (!System.getProperty("os.name").toLowerCase().contains("windows"))
                         throw new WebDriverException("Your OS doesn't support Internet Explorer");
-                    driver = new InternetExplorerDriver();
+                    driverPool.set(new InternetExplorerDriver());
                     break;
 
                 case "edge":
                     if (!System.getProperty("os.name").toLowerCase().contains("windows"))
                         throw new WebDriverException("Your OS doesn't support Edge");
-                    driver = new EdgeDriver();
+                    driverPool.set(new EdgeDriver());
                     break;
 
                 case "safari":
                     if (!System.getProperty("os.name").toLowerCase().contains("mac"))
                         throw new WebDriverException("Your OS doesn't support Safari");
-                    driver = new SafariDriver();
+                    driverPool.set(new SafariDriver());
                     break;
             }
 
         }
 
-        return driver;
+        return driverPool.get();
     }
 
     public static void closeDriver() {
-        if (driver != null) {
-            driver.quit();
-            driver = null;
-        }
+        driverPool.get().quit();
+        driverPool.remove();
+
     }
 }
