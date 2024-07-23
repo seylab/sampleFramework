@@ -5,17 +5,20 @@ import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.FluentWait;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 
 public class BrowserUtils {
 
     /**
      * Switches to new window by the exact title. Returns to original window if target title not found
+     *
      * @param targetTitle
      */
     public static void switchToWindow(String targetTitle) {
@@ -116,6 +119,37 @@ public class BrowserUtils {
         return new WebDriverWait(Driver.get(), Duration.ofSeconds(timeout)).until(ExpectedConditions.elementToBeClickable(element));
     }
 
+    public static WebElement waitForClickabilityFluent(WebElement element, int timeout) {
+        FluentWait<WebDriver> wait = new FluentWait<>(Driver.get())
+                .withTimeout(Duration.ofSeconds(timeout))
+                .pollingEvery(Duration.ofMillis(500)) // Durumu kontrol etme sıklığı
+                .ignoring(StaleElementReferenceException.class); // StaleElementReferenceException'ı yoksayın
+
+        // Bekleme koşulu
+        Function<WebDriver, WebElement> waitCondition = driver -> ExpectedConditions.elementToBeClickable(element).apply(driver);
+
+        // Elementin tıklanabilir hale gelmesini bekleyin
+        return wait.until(waitCondition);
+    }
+
+    /**
+     * Waits for the provided element to be clickable within the given timeout duration.
+     *
+     * @param element The WebElement to wait for clickability.
+     * @param timeout The maximum time to wait for the element to be clickable, in seconds.
+     * @return The clickable WebElement.
+     * @throws StaleElementReferenceException If the element reference becomes stale during the waiting process.
+     */
+    public static WebElement waitForClickabilityStaleElement(WebElement element, int timeout) throws StaleElementReferenceException {
+        try {
+//            WebDriver driver = Driver.get(); // Assuming Driver.get() returns the WebDriver instance
+            WebDriverWait wait = new WebDriverWait(Driver.get(), Duration.ofSeconds(timeout));
+            return wait.until(ExpectedConditions.elementToBeClickable(element));
+        } catch (StaleElementReferenceException e) {
+            throw new StaleElementReferenceException("WebElement reference became stale while waiting for clickability.", e);
+        }
+    }
+
     /**
      * Waits for element matching the locator to be clickable
      *
@@ -192,6 +226,7 @@ public class BrowserUtils {
             Assert.fail("Element not found: " + element);
 
         }
+        System.out.println("element text = " + element.getText());
     }
 
 
@@ -225,6 +260,16 @@ public class BrowserUtils {
         }
     }
 
+    /**
+     * Accepts an alert with a dynamic wait.
+     *
+     * @param timeToWaitInSec The amount of time to wait for the alert to appear.
+     */
+    public static void waitForAlertPresent(int timeToWaitInSec) {
+        Alert alert = Driver.get().switchTo().alert();
+        WebDriverWait wait = new WebDriverWait(Driver.get(), Duration.ofSeconds(timeToWaitInSec));
+        wait.until(ExpectedConditions.alertIsPresent());
+    }
 
     /**
      * Clicks on an element using JavaScript
@@ -235,7 +280,6 @@ public class BrowserUtils {
         ((JavascriptExecutor) Driver.get()).executeScript("arguments[0].scrollIntoView(true);", element);
         ((JavascriptExecutor) Driver.get()).executeScript("arguments[0].click();", element);
     }
-
 
     /**
      * Scrolls down to an element using JavaScript
@@ -268,6 +312,7 @@ public class BrowserUtils {
 
     /**
      * Highlight an element by changing its background and border color
+     *
      * @param element
      */
     public static void highlight(WebElement element) {
@@ -283,6 +328,8 @@ public class BrowserUtils {
      * @param check
      */
     public static void selectCheckBox(WebElement element, boolean check) {
+        waitForPageToLoad(20);
+        waitForVisibility(element, 20);
         if (check) {
             if (!element.isSelected()) {
                 element.click();
@@ -308,6 +355,18 @@ public class BrowserUtils {
             } catch (WebDriverException e) {
                 waitFor(1);
             }
+        }
+    }
+
+    public static void clickElement(WebElement element, int timeout) {
+        waitForPageToLoad(timeout);
+        try {
+            waitForClickability(element, timeout);
+            element.click();
+        } catch (StaleElementReferenceException e) {
+            // If the element becomes invalid, find the element again
+            WebElement newElement = waitForClickability(element, timeout);
+            newElement.click();
         }
     }
 
@@ -364,7 +423,8 @@ public class BrowserUtils {
 
     /**
      *  checks that an element is present on the DOM of a page. This does not
-     *    * necessarily mean that the element is visible.
+     *  necessarily mean that the element is visible.
+     *
      * @param by
      * @param time
      */
@@ -392,6 +452,7 @@ public class BrowserUtils {
     }
 
     public static void acceptAlert() {
+        waitForAlertPresent(20);
         // Get the alert
         Alert alert = Driver.get().switchTo().alert();
         // Accept the alert
@@ -399,11 +460,10 @@ public class BrowserUtils {
     }
 
     public static void dismissAlert() {
+        waitForAlertPresent(20);
         // Get the alert
         Alert alert = Driver.get().switchTo().alert();
         // Dismiss the alert
         alert.dismiss();
     }
-
-
 }
