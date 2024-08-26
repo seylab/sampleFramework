@@ -27,10 +27,17 @@ public class Driver {
                 case "chrome":
                     ChromeOptions options = new ChromeOptions();
                     options.addArguments("--remote-allow-origins=*");
-                    driver = new ChromeDriver();
+                    options.addArguments("--disable-search-engine-choice-screen");
+                    options.addArguments("--disable-features=OptimizationGuideModelDownloading,OptimizationHintsFetching,OptimizationTargetPrediction,OptimizationHints");
+                    options.setBinary("src/test/resources/tools/chromedriver.exe");
+                    driver = new ChromeDriver(options);
                     break;
                 case "chrome-headless":
-                    driver = new ChromeDriver(new ChromeOptions().addArguments("--headless"));
+                    ChromeOptions chromeHeadlessOptions = new ChromeOptions();
+                    chromeHeadlessOptions.addArguments("--headless=new");
+                    chromeHeadlessOptions.addArguments("--disable-search-engine-choice-screen");
+                    chromeHeadlessOptions.addArguments("--disable-features=OptimizationGuideModelDownloading,OptimizationHintsFetching,OptimizationTargetPrediction,OptimizationHints");
+                    driver = new ChromeDriver(chromeHeadlessOptions);
                     break;
                 case "firefox":
                     driver = new FirefoxDriver();
