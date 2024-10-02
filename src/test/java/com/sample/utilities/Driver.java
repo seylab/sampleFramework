@@ -11,62 +11,94 @@ import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.ie.InternetExplorerDriver;
 import org.openqa.selenium.safari.SafariDriver;
 
+import java.util.HashMap;
+
 public class Driver {
-    private Driver() {
-
-    }
-
     private static WebDriver driver;
 
+    private Driver() {
+        // Prevent instantiation
+    }
+
     public static WebDriver get() {
-        // Test
         if (driver == null) {
-            // this line will tell which browser should open based on the value from properties file
-            String browser = ConfigurationReader.get("browser");
-            switch (browser) {
-                case "chrome":
-                    ChromeOptions options = new ChromeOptions();
-                    options.addArguments("--remote-allow-origins=*");
-                    options.addArguments("--disable-search-engine-choice-screen");
-                    options.addArguments("--disable-features=OptimizationGuideModelDownloading,OptimizationHintsFetching,OptimizationTargetPrediction,OptimizationHints");
-                    options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation"});
-                    driver = new ChromeDriver(options);
-                    break;
-                case "chrome-headless":
-                    ChromeOptions chromeHeadlessOptions = new ChromeOptions();
-                    chromeHeadlessOptions.addArguments("--headless=new");
-                    chromeHeadlessOptions.addArguments("--disable-search-engine-choice-screen");
-                    chromeHeadlessOptions.addArguments("--disable-features=OptimizationGuideModelDownloading,OptimizationHintsFetching,OptimizationTargetPrediction,OptimizationHints");
-                    driver = new ChromeDriver(chromeHeadlessOptions);
-                    break;
-                case "firefox":
-                    driver = new FirefoxDriver();
-                    break;
-                case "firefox-headless":
-                    driver = new FirefoxDriver(new FirefoxOptions().addArguments("--headless"));
-                    break;
-                case "ie":
-                    if (!System.getProperty("os.name").toLowerCase().contains("windows"))
-                        throw new WebDriverException("Your OS doesn't support Internet Explorer");
-                    driver = new InternetExplorerDriver();
-                    break;
+            String browser = System.getProperty("browser", ConfigurationReader.get("browser"));
+            driver = createDriver(browser);
+        }
+        return driver;
+    }
 
-                case "edge":
-                    if (!System.getProperty("os.name").toLowerCase().contains("windows"))
-                        throw new WebDriverException("Your OS doesn't support Edge");
-                    driver = new EdgeDriver();
-                    break;
+    private static WebDriver createDriver(String browser) {
+        switch (browser.toLowerCase()) {
+            case "chrome":
+                return initializeChromeDriver(false);
+            case "chrome-headless":
+                return initializeChromeDriver(true);
+            case "firefox":
+                return new FirefoxDriver();
+            case "firefox-headless":
+                return new FirefoxDriver(new FirefoxOptions().addArguments("--headless"));
+            case "ie":
+                return initializeInternetExplorerDriver();
+            case "edge":
+                return initializeEdgeDriver();
+            case "safari":
+                return initializeSafariDriver();
+            default:
+                throw new WebDriverException("Unsupported browser: " + browser);
+        }
+    }
 
-                case "safari":
-                    if (!System.getProperty("os.name").toLowerCase().contains("mac"))
-                        throw new WebDriverException("Your OS doesn't support Safari");
-                    driver = new SafariDriver();
-                    break;
-            }
+    private static WebDriver initializeChromeDriver(boolean headless) {
+        ChromeOptions options = new ChromeOptions();
+        options.addArguments("--remote-allow-origins=*");
+        options.addArguments("--no-sandbox");
+        options.addArguments("--disable-search-engine-choice-screen");
+        options.addArguments("--disable-features=OptimizationGuideModelDownloading,OptimizationHintsFetching,OptimizationTargetPrediction,OptimizationHints");
+        options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation"});
+        options.setExperimentalOption("prefs", getChromePreferences());
 
+        if (headless) {
+            options.addArguments("--headless=new");
         }
 
-        return driver;
+        return new ChromeDriver(options);
+    }
+
+    private static HashMap<String, Object> getChromePreferences() {
+        HashMap<String, Object> prefs = new HashMap<>();
+        prefs.put("credentials_enable_service", false);
+        prefs.put("profile.password_manager_enabled", false);
+        return prefs;
+    }
+
+    private static WebDriver initializeInternetExplorerDriver() {
+        if (!isWindowsOS()) {
+            throw new WebDriverException("Your OS doesn't support Internet Explorer");
+        }
+        return new InternetExplorerDriver();
+    }
+
+    private static WebDriver initializeEdgeDriver() {
+        if (!isWindowsOS()) {
+            throw new WebDriverException("Your OS doesn't support Edge");
+        }
+        return new EdgeDriver();
+    }
+
+    private static WebDriver initializeSafariDriver() {
+        if (!isMacOS()) {
+            throw new WebDriverException("Your OS doesn't support Safari");
+        }
+        return new SafariDriver();
+    }
+
+    private static boolean isWindowsOS() {
+        return System.getProperty("os.name").toLowerCase().contains("windows");
+    }
+
+    private static boolean isMacOS() {
+        return System.getProperty("os.name").toLowerCase().contains("mac");
     }
 
     public static void closeDriver() {
