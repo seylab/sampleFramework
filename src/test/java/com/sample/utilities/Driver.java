@@ -11,72 +11,117 @@ import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.ie.InternetExplorerDriver;
 import org.openqa.selenium.safari.SafariDriver;
 
+import java.util.HashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 
 public class Driver {
-    private Driver() {
+    private static InheritableThreadLocal<WebDriver> driverPool = new InheritableThreadLocal<>();
+    private static final Lock lock = new ReentrantLock();
 
+    private Driver() {
+        // Prevent instantiation
     }
 
-    // InheritableThreadLocal  --> this is like a container, bag, pool.
-    // in this pool we can have separate objects for each thread
-    // for each thread, in InheritableThreadLocal we can have separate object for that thread
-    // driver class will provide separate webdriver object per thread
-    private static InheritableThreadLocal<WebDriver> driverPool = new InheritableThreadLocal<>();
-
     public static WebDriver get() {
-        // Test
         if (driverPool.get() == null) {
-            // this line will tell which browser should open based on the value from properties file
-            String browser = System.getProperty("browser") != null ? browser = System.getProperty("browser") : ConfigurationReader.get("browser");
-
-            switch (browser) {
-                case "chrome":
-                    ChromeOptions options = new ChromeOptions();
-                    options.addArguments("--remote-allow-origins=*");
-                    options.addArguments("--disable-search-engine-choice-screen");
-                    options.addArguments("--disable-features=OptimizationGuideModelDownloading,OptimizationHintsFetching,OptimizationTargetPrediction,OptimizationHints");
-                    driverPool.set(new ChromeDriver(options));
-                    break;
-                case "chrome-headless":
-                    ChromeOptions chromeHeadlessOptions = new ChromeOptions();
-                    chromeHeadlessOptions.addArguments("--headless=new");
-                    chromeHeadlessOptions.addArguments("--disable-search-engine-choice-screen");
-                    chromeHeadlessOptions.addArguments("--disable-features=OptimizationGuideModelDownloading,OptimizationHintsFetching,OptimizationTargetPrediction,OptimizationHints");
-                    driverPool.set( new ChromeDriver(chromeHeadlessOptions));
-                    break;
-                case "firefox":
-                    driverPool.set(new FirefoxDriver());
-                    break;
-                case "firefox-headless":
-                    driverPool.set(new FirefoxDriver(new FirefoxOptions().addArguments("--headless")));
-                    break;
-                case "ie":
-                    if (!System.getProperty("os.name").toLowerCase().contains("windows"))
-                        throw new WebDriverException("Your OS doesn't support Internet Explorer");
-                    driverPool.set(new InternetExplorerDriver());
-                    break;
-
-                case "edge":
-                    if (!System.getProperty("os.name").toLowerCase().contains("windows"))
-                        throw new WebDriverException("Your OS doesn't support Edge");
-                    driverPool.set(new EdgeDriver());
-                    break;
-
-                case "safari":
-                    if (!System.getProperty("os.name").toLowerCase().contains("mac"))
-                        throw new WebDriverException("Your OS doesn't support Safari");
-                    driverPool.set(new SafariDriver());
-                    break;
+            lock.lock();
+            try {
+                if (driverPool.get() == null) { // Double-check locking
+                    String browser = getBrowserType();
+                    driverPool.set(createDriver(browser));
+                }
+            } finally {
+                lock.unlock();
             }
-
         }
-
         return driverPool.get();
     }
 
-    public static void closeDriver() {
-        driverPool.get().quit();
-        driverPool.remove();
+    private static String getBrowserType() {
+        String browser = System.getProperty("browser");
+        return browser != null ? browser : ConfigurationReader.get("browser");
+    }
 
+    private static WebDriver createDriver(String browser) {
+        switch (browser.toLowerCase()) {
+            case "chrome":
+                return initializeChromeDriver(false);
+            case "chrome-headless":
+                return initializeChromeDriver(true);
+            case "firefox":
+                return new FirefoxDriver();
+            case "firefox-headless":
+                return new FirefoxDriver(new FirefoxOptions().addArguments("--headless"));
+            case "ie":
+                return initializeInternetExplorerDriver();
+            case "edge":
+                return initializeEdgeDriver();
+            case "safari":
+                return initializeSafariDriver();
+            default:
+                throw new WebDriverException("Unsupported browser: " + browser);
+        }
+    }
+
+    private static WebDriver initializeChromeDriver(boolean headless) {
+        ChromeOptions options = new ChromeOptions();
+        options.addArguments("--remote-allow-origins=*");
+        options.addArguments("--no-sandbox");
+        options.addArguments("--disable-search-engine-choice-screen");
+        options.addArguments("--disable-features=OptimizationGuideModelDownloading,OptimizationHintsFetching,OptimizationTargetPrediction,OptimizationHints");
+        options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation"});
+        options.setExperimentalOption("prefs", getChromePreferences());
+
+        if (headless) {
+            options.addArguments("--headless=new");
+        }
+
+        return new ChromeDriver(options);
+    }
+
+    private static HashMap<String, Object> getChromePreferences() {
+        HashMap<String, Object> prefs = new HashMap<>();
+        prefs.put("credentials_enable_service", false);
+        prefs.put("profile.password_manager_enabled", false);
+        return prefs;
+    }
+
+    private static WebDriver initializeInternetExplorerDriver() {
+        if (!isWindowsOS()) {
+            throw new WebDriverException("Your OS doesn't support Internet Explorer");
+        }
+        return new InternetExplorerDriver();
+    }
+
+    private static WebDriver initializeEdgeDriver() {
+        if (!isWindowsOS()) {
+            throw new WebDriverException("Your OS doesn't support Edge");
+        }
+        return new EdgeDriver();
+    }
+
+    private static WebDriver initializeSafariDriver() {
+        if (!isMacOS()) {
+            throw new WebDriverException("Your OS doesn't support Safari");
+        }
+        return new SafariDriver();
+    }
+
+    private static boolean isWindowsOS() {
+        return System.getProperty("os.name").toLowerCase().contains("windows");
+    }
+
+    private static boolean isMacOS() {
+        return System.getProperty("os.name").toLowerCase().contains("mac");
+    }
+
+    public static void closeDriver() {
+        WebDriver driver = driverPool.get();
+        if (driver != null) {
+            driver.quit();
+            driverPool.remove();
+        }
     }
 }
