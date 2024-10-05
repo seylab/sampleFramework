@@ -448,6 +448,7 @@ public class BrowserUtils {
     public static void sendKeysMethod(WebElement element, String text, int timeout) {
         waitForPageToLoad(timeout);
         waitForVisibility(element, timeout);
+        element.clear();
         element.sendKeys(text);
     }
 
@@ -465,5 +466,10 @@ public class BrowserUtils {
         Alert alert = Driver.get().switchTo().alert();
         // Dismiss the alert
         alert.dismiss();
+    }
+
+    public static void refreshPage() {
+        Driver.get().navigate().refresh();
+        waitForPageToLoad(30);
     }
 }
